@@ -393,7 +393,7 @@ func main() {
 		panic("sdl error")
 	}
 
-	sdl.WM_SetCaption("Mage", "Mage")
+	sdl.WM_SetCaption("Gotris", "Gotris")
 
 	if gl.Init() != 0 {
 		panic("glew error")
