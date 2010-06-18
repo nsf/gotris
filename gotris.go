@@ -326,16 +326,17 @@ func (self *TetrisField) CheckForLines() int {
 			}
 		}
 
-		if full {
-			// if the line is full, increment counter and move all those
-			// that are above this line one line down
-			lines++
+		if !full {
+			continue
+		}
+		// if the line is full, increment counter and move all those
+		// that are above this line one line down
+		lines++
 
-			for y2 := y - 1; y2 >= 0; y2-- {
-				for x := 0; x < self.Width; x++ {
-					offset := y2 * self.Width + x
-					self.Blocks[offset + self.Width] = self.Blocks[offset]
-				}
+		for y2 := y - 1; y2 >= 0; y2-- {
+			for x := 0; x < self.Width; x++ {
+				offset := y2 * self.Width + x
+				self.Blocks[offset + self.Width] = self.Blocks[offset]
 			}
 		}
 	}
