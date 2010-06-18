@@ -1,11 +1,6 @@
-gotris: gotris.8 
-	8l -o gotris gotris.8
-	
-SOURCES=\
-	gotris.go
+include $(GOROOT)/src/Make.$(GOARCH)
 
-gotris.8: $(SOURCES)
-	8g $(SOURCES)
+TARG=gotris
+GOFILES=gotris.go
 
-clean:
-	rm -rf *.8 gotris
+include $(GOROOT)/src/Make.cmd
