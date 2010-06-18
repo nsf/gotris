@@ -6,24 +6,6 @@ import (
 	"rand"
 )
 
-func drawQuad(x, y, w, h int, u, v, u2, v2 float) {
-	gl.Begin(gl.QUADS)
-
-	gl.TexCoord2f(gl.GLfloat(u), gl.GLfloat(v))
-	gl.Vertex2i(gl.GLint(x), gl.GLint(y))
-
-	gl.TexCoord2f(gl.GLfloat(u2), gl.GLfloat(v))
-	gl.Vertex2i(gl.GLint(x+w), gl.GLint(y))
-
-	gl.TexCoord2f(gl.GLfloat(u2), gl.GLfloat(v2))
-	gl.Vertex2i(gl.GLint(x+w), gl.GLint(y+h))
-
-	gl.TexCoord2f(gl.GLfloat(u), gl.GLfloat(v2))
-	gl.Vertex2i(gl.GLint(x), gl.GLint(y+h))
-
-	gl.End()
-}
-
 const blockSize = 15
 const smallBlockSize = 9
 const smallBlockOffset = (blockSize - smallBlockSize) / 2
