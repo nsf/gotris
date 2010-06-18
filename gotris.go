@@ -134,7 +134,6 @@ func (self *TetrisFigure) GetRotationsNum(rotateBlock RotateFunc) int {
 		Rotate3
 		Rotate4
 	)
-	masks := [...]uint{Rotate1, Rotate2, Rotate3, Rotate4}
 	validRotations := ^uint(0)
 	// first we rotate each visible block four times around the center
 	// and checking whether each rotation is valid, then we make a list
@@ -152,7 +151,7 @@ func (self *TetrisFigure) GetRotationsNum(rotateBlock RotateFunc) int {
 
 				// check whether a rotation is valid an record it
 				if rbx >= 0 && rbx <= 4 && rby >= 0 && rby <= 4 {
-					blockMask |= masks[i]
+					blockMask |= 1 << uint(i)
 				}
 			}
 
