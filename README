@@ -1,0 +1,7 @@
+Classic tetris game written in Go.
+
+Dependencies:
+	- Go-SDL (http://github.com/banthar/Go-SDL)
+		- currently 'master' branch required (default is 'release')
+		
+	- Go-OpenGL (http://github.com/banthar/Go-OpenGL)
