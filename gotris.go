@@ -3,10 +3,6 @@ package main
 import (
 	"sdl"
 	"gl"
-//	"opengl_utils"
-//	"io/ioutil"
-//	"fmt"
-//	"runtime"
 	"rand"
 )
 
@@ -27,17 +23,6 @@ func drawQuad(x, y, w, h int, u, v, u2, v2 float) {
 
 	gl.End()
 }
-
-/*
-func drawBackground(image *opengl_utils.Texture) {
-	gl.BindTexture(gl.TEXTURE_2D, gl.GLuint(image.Id))
-	drawQuad(0, 0, 640, 480, 0, 0, 1, 1)
-}
-
-func printVec(v *Vec2) {
-	fmt.Printf("%f %f\n", v.X, v.Y)
-}
-*/
 
 const blockSize = 15
 const smallBlockSize = 9
@@ -375,18 +360,6 @@ func (self *TetrisField) CheckForLines() int {
 	return lines
 }
 
-/*
-func (self *TetrisField) FillRandom() {
-	for i := 0; i < self.Width * self.Height; i++ {
-		color := TetrisBlockColor{byte(rand.Uint32() % 256),
-					  byte(rand.Uint32() % 256),
-					  byte(rand.Uint32() % 256)}
-		self.Blocks[i].Color = color
-		self.Blocks[i].Filled = true
-	}
-}
-*/
-
 func (self *TetrisField) PixelsWidth() int {
 	return (self.Width + 2) * blockSize
 }
@@ -410,18 +383,6 @@ func drawBlock(x, y int, color TetrisBlockColor) {
 	gl.End()
 }
 
-/*
-func collideAndSetColor(field *TetrisField, figure *TetrisFigure, red, green TetrisBlockColor) bool {
-	if field.Collide(figure) {
-		figure.SetColor(red)
-		return true
-	}
-
-	figure.SetColor(green)
-	return false
-}
-*/
-
 func main() {
 	sdl.Init(sdl.INIT_VIDEO)
 	defer sdl.Quit()
@@ -438,28 +399,12 @@ func main() {
 		panic("glew error")
 	}
 
-	/*
-	data, err := ioutil.ReadFile("background.png")
-	if err != nil {
-		panic("file read error")
-	}
-
-	gl.Enable(gl.TEXTURE_2D)
-	*/
 	gl.Viewport(0, 0, 640, 480)
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
 	gl.Ortho(0, 640, 480, 0, -1, 1)
 
 	gl.ClearColor(0.1, 0, 0, 0)
-
-	/*
-	tex := opengl_utils.LoadTexture_PNG_ARGB32(data)
-	if tex == nil {
-		panic("failed to load texture")
-	}
-	defer tex.Free()
-	*/
 
 	field := NewTetrisField(10, 25)
 	pw := field.PixelsWidth()
@@ -531,12 +476,9 @@ func main() {
 		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
-		//drawBackground(tex)
-		//gl.BindTexture(gl.TEXTURE_2D, 0)
 		field.Draw(cx, cy)
 		f.Draw(cx, cy)
 		gl.Color3ub(255,255,255)
 		sdl.GL_SwapBuffers()
 	}
-	//fmt.Printf("Number of cgo calls: %d\n", runtime.Cgocalls())
 }
