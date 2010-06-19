@@ -662,7 +662,9 @@ func (self *GameSession) drawPlaying() {
 	self.Field.Draw(self.cx, self.cy)
 	self.Figure.Draw(self.cx, self.cy)
 
-	self.NextFigure.Draw(self.cx + self.Field.PixelsWidth() + 50, self.cy + 50)
+	gl.Color3ub(255, 255, 255)
+	self.font.Draw(self.cx + self.Field.PixelsWidth() + 50, self.cy + 5, "Next:")
+	self.NextFigure.Draw(self.cx + self.Field.PixelsWidth(), self.cy + 50)
 }
 
 func (self *GameSession) drawGameOver() {
