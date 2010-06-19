@@ -10,6 +10,21 @@ const blockSize = 15
 const smallBlockSize = 9
 const smallBlockOffset = (blockSize - smallBlockSize) / 2
 
+func drawBlock(x, y int, color TetrisBlockColor) {
+	gl.Color3ub(gl.GLubyte(color.R/2),gl.GLubyte(color.G/2),gl.GLubyte(color.B/2))
+	gl.Begin(gl.QUADS)
+	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y))
+	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y))
+	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y + blockSize))
+	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y + blockSize))
+	gl.Color3ub(gl.GLubyte(color.R),gl.GLubyte(color.G),gl.GLubyte(color.B))
+	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + smallBlockOffset))
+	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + smallBlockOffset))
+	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + blockSize - smallBlockOffset))
+	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + blockSize - smallBlockOffset))
+	gl.End()
+}
+
 //-------------------------------------------------------------------------
 // TetrisFigure
 //-------------------------------------------------------------------------
@@ -348,21 +363,6 @@ func (self *TetrisField) PixelsWidth() int {
 
 func (self *TetrisField) PixelsHeight() int {
 	return (self.Height + 1) * blockSize
-}
-
-func drawBlock(x, y int, color TetrisBlockColor) {
-	gl.Color3ub(gl.GLubyte(color.R/2),gl.GLubyte(color.G/2),gl.GLubyte(color.B/2))
-	gl.Begin(gl.QUADS)
-	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y))
-	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y))
-	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y + blockSize))
-	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y + blockSize))
-	gl.Color3ub(gl.GLubyte(color.R),gl.GLubyte(color.G),gl.GLubyte(color.B))
-	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + blockSize - smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + blockSize - smallBlockOffset))
-	gl.End()
 }
 
 func main() {
