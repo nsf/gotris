@@ -123,6 +123,7 @@ type TetrisFigure struct {
 // build figure out of spec
 func NewTetrisFigure(spec string, color TetrisBlockColor) *TetrisFigure {
 	figure := new(TetrisFigure)
+	figure.X = 3
 	figure.CenterX = -1
 	figure.CenterY = -1
 
