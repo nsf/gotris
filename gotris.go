@@ -381,6 +381,9 @@ func main() {
 		panic("glew error")
 	}
 
+	gl.Enable(gl.TEXTURE_2D)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.Viewport(0, 0, 640, 480)
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
@@ -388,11 +391,20 @@ func main() {
 
 	gl.ClearColor(0.1, 0, 0, 0)
 
+	//-----------------------------------------------------------------------------
+
+	font, err := LoadFontFromFile("dejavu.font")
+	if err != nil {
+		panic(err)
+	}
+
 	field := NewTetrisField(10, 25)
 	pw := field.PixelsWidth()
 	ph := field.PixelsHeight()
 	cx := (640 - pw) / 2
 	cy := (480 - ph) / 2
+
+	labelcx := (640 - font.Width("Tetris!")) / 2
 
 	specs := [...]string{
 		specN,
@@ -458,6 +470,7 @@ func main() {
 		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+		font.Draw(labelcx, 5, "Tetris!")
 		field.Draw(cx, cy)
 		f.Draw(cx, cy)
 		gl.Color3ub(255,255,255)
