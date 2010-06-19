@@ -376,6 +376,7 @@ func main() {
 	}
 
 	sdl.WM_SetCaption("Gotris", "Gotris")
+	sdl.EnableKeyRepeat(250, 45)
 
 	if gl.Init() != 0 {
 		panic("glew error")
