@@ -4,11 +4,14 @@ import (
 	"sdl"
 	"gl"
 	"rand"
+	"fmt"
+	"flag"
 )
 
 const blockSize = 15
 const smallBlockSize = 9
 const smallBlockOffset = (blockSize - smallBlockSize) / 2
+const grayifyingInterval = 100
 
 func drawBlock(x, y int, color TetrisBlockColor) {
 	gl.Color3ub(gl.GLubyte(color.R/2),gl.GLubyte(color.G/2),gl.GLubyte(color.B/2))
@@ -24,6 +27,8 @@ func drawBlock(x, y int, color TetrisBlockColor) {
 	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + blockSize - smallBlockOffset))
 	gl.End()
 }
+
+var initLevel *int = flag.Int("level", 1, "set initial level to this value")
 
 //-------------------------------------------------------------------------
 // TetrisFigure
@@ -87,6 +92,24 @@ const specLMirrored = `
 0000
 `
 
+var specColors [7]TetrisBlockColor = [7]TetrisBlockColor{
+	TetrisBlockColor{255,0,0},
+	TetrisBlockColor{0,255,0},
+	TetrisBlockColor{100,100,255},
+	TetrisBlockColor{255,255,255},
+	TetrisBlockColor{255,0,255},
+	TetrisBlockColor{255,255,0},
+	TetrisBlockColor{0,255,255}}
+
+var specs [7]string = [7]string{
+	specN,
+	specNMirrored,
+	specT,
+	specI,
+	specB,
+	specL,
+	specLMirrored}
+
 type TetrisFigure struct {
 	// center of the figure (valid range: 0..3 0..3)
 	CenterX, CenterY int
@@ -94,6 +117,7 @@ type TetrisFigure struct {
 	// position in blocks relative to top left tetris field block
 	X, Y int
 	Blocks [16]TetrisBlock
+	Class uint32
 }
 
 // build figure out of spec
@@ -118,6 +142,26 @@ func NewTetrisFigure(spec string, color TetrisBlockColor) *TetrisFigure {
 		}
 	}
 	return figure
+}
+
+func NewRandomTetrisFigure() *TetrisFigure {
+	ri := rand.Uint32() % uint32(len(specs))
+	f := NewTetrisFigure(specs[ri], specColors[ri])
+	f.Class = ri
+	return f
+}
+
+func NewRandomTetrisFigureNot(figure *TetrisFigure) *TetrisFigure {
+	var ri uint32
+	for {
+		ri = rand.Uint32() % uint32(len(specs))
+		if ri != figure.Class {
+			break
+		}
+	}
+	f := NewTetrisFigure(specs[ri], specColors[ri])
+	f.Class = ri
+	return f
 }
 
 func (self *TetrisFigure) SetColor(color TetrisBlockColor) {
@@ -263,6 +307,12 @@ func NewTetrisField(w, h int) *TetrisField {
 	return &TetrisField{w, h, make([]TetrisBlock, w*h)}
 }
 
+func (self *TetrisField) Clear() {
+	for i := 0; i < self.Width * self.Height; i++ {
+		self.Blocks[i].Filled = false
+	}
+}
+
 func (self *TetrisField) Draw(ox, oy int) {
 	leftWallX := self.PixelsWidth() - blockSize
 	grey := TetrisBlockColor{80, 80, 80}
@@ -280,6 +330,37 @@ func (self *TetrisField) Draw(ox, oy int) {
 		for x := 0; x < self.Width; x++ {
 			offset := y * self.Width + x
 			self.Blocks[offset].Draw(ox + x * blockSize, oy + y * blockSize)
+		}
+	}
+}
+
+func (self *TetrisField) Grayify() {
+	for i := 0; i < self.Width * self.Height; i++ {
+		if !self.Blocks[i].Filled {
+			continue
+		}
+
+		c := &self.Blocks[i].Color
+		if c.R != 80 {
+			if c.R < 80 {
+				c.R++
+			} else {
+				c.R--
+			}
+		}
+		if c.G != 80 {
+			if c.G < 80 {
+				c.G++
+			} else {
+				c.G--
+			}
+		}
+		if c.B != 80 {
+			if c.B < 80 {
+				c.B++
+			} else {
+				c.B--
+			}
 		}
 	}
 }
@@ -365,7 +446,235 @@ func (self *TetrisField) PixelsHeight() int {
 	return (self.Height + 1) * blockSize
 }
 
+//-------------------------------------------------------------------------
+// GameSession
+//-------------------------------------------------------------------------
+
+// Game state
+const (
+	GS_Playing = iota
+	GS_Paused
+	GS_GameOver
+)
+
+type GameSession struct {
+	Field *TetrisField
+	Figure *TetrisFigure
+	NextFigure *TetrisFigure
+
+	Score int
+	Level int
+	State int
+
+	time uint32
+	grayifyingTime uint32
+	cx, cy int
+	initLevel int
+	gameOverCx int
+	pauseCx int
+	font *Font
+}
+
+func NewGameSession(initLevel int, font *Font) *GameSession {
+	gs := new(GameSession)
+	gs.Field = NewTetrisField(10, 25)
+	gs.Figure = NewRandomTetrisFigure()
+	gs.NextFigure = NewRandomTetrisFigureNot(gs.Figure)
+	gs.Score = 0
+	gs.initLevel = initLevel
+	gs.Level = initLevel
+	gs.State = GS_Playing
+	gs.time = 0
+	gs.grayifyingTime = 0
+
+	gs.font = font
+	gs.cx = (640 - gs.Field.PixelsWidth()) / 2
+	gs.cy = (480 - gs.Field.PixelsHeight()) / 2
+	gs.gameOverCx = (640 - font.Width("Game Over, restart? y/n")) / 2
+	gs.pauseCx = (640 - font.Width("Game paused, press P to resume")) / 2
+	return gs
+}
+
+func (self *GameSession) Reset() {
+	self.Field.Clear()
+	self.Figure = NewRandomTetrisFigure()
+	self.NextFigure = NewRandomTetrisFigureNot(self.Figure)
+	self.Score = 0
+	self.Level = self.initLevel
+	self.State = GS_Playing
+	self.time = 0
+	self.grayifyingTime = 0
+}
+
+func (self *GameSession) Speed() uint32 {
+	return uint32(1000 / self.Level)
+}
+
+func (self *GameSession) AddScore(score int) {
+	self.Score += score * self.Level
+	if self.Score > self.Level * self.Level * 10000 && self.Level < 9 {
+		self.Level++
+	}
+}
+
+//-------------------------------------------------------------------------
+// GameSession::Update
+//-------------------------------------------------------------------------
+
+func (self *GameSession) updatePlaying(delta uint32) {
+	self.time += delta
+	self.grayifyingTime += delta
+	if self.grayifyingTime > grayifyingInterval {
+		self.grayifyingTime -= grayifyingInterval
+		self.Field.Grayify()
+	}
+	if self.time > self.Speed() {
+		self.time -= self.Speed()
+		if self.Field.StepCollideAndMerge(self.Figure) {
+			lines := self.Field.CheckForLines()
+			if lines > 0 {
+				self.AddScore(lines * 1000)
+			}
+			self.Figure = self.NextFigure
+			if self.Field.Collide(self.Figure) {
+				self.State = GS_GameOver
+				return
+			}
+			self.NextFigure = NewRandomTetrisFigureNot(self.Figure)
+		}
+	}
+}
+
+func (self *GameSession) updateGameOver(delta uint32) {
+	self.grayifyingTime += delta
+	if self.grayifyingTime > grayifyingInterval {
+		self.grayifyingTime -= grayifyingInterval
+		self.Field.Grayify()
+	}
+}
+
+func (self *GameSession) updateGamePaused(delta uint32) {
+	self.updateGameOver(delta)
+}
+
+func (self *GameSession) Update(delta uint32) {
+	switch self.State {
+	case GS_Playing:
+		self.updatePlaying(delta)
+	case GS_GameOver:
+		self.updateGameOver(delta)
+	case GS_Paused:
+		self.updateGamePaused(delta)
+	}
+}
+
+//-------------------------------------------------------------------------
+// GameSession::HandleKey
+//-------------------------------------------------------------------------
+
+func (self *GameSession) handleKeyPlaying(key uint32) bool {
+	switch key {
+	case sdl.K_LEFT, sdl.K_a, sdl.K_j:
+		self.Figure.X--
+		if self.Field.Collide(self.Figure) {
+			self.Figure.X++
+		}
+	case sdl.K_RIGHT, sdl.K_d, sdl.K_l:
+		self.Figure.X++
+		if self.Field.Collide(self.Figure) {
+			self.Figure.X--
+		}
+	case sdl.K_UP, sdl.K_w, sdl.K_i:
+		self.Figure.Rotate(rotateCWBlock)
+		if self.Field.Collide(self.Figure) {
+			self.Figure.Rotate(rotateCCWBlock)
+		}
+	case sdl.K_DOWN, sdl.K_s, sdl.K_k, sdl.K_SPACE:
+		for {
+			if self.Field.Collide(self.Figure) {
+				self.Figure.Y--
+				break
+			} else {
+				self.Figure.Y++
+			}
+		}
+	case sdl.K_ESCAPE:
+		return false
+	case sdl.K_p:
+		self.State = GS_Paused
+	}
+	return true
+}
+
+func (self *GameSession) handleKeyPaused(key uint32) bool {
+	if key == sdl.K_p {
+		self.State = GS_Playing
+	}
+	return true
+}
+
+func (self *GameSession) handleKeyGameOver(key uint32) bool {
+	switch key {
+	case sdl.K_y:
+		self.Reset()
+	case sdl.K_n, sdl.K_ESCAPE:
+		return false
+	}
+	return true
+}
+
+func (self *GameSession) HandleKey(key uint32) bool {
+	switch self.State {
+	case GS_Playing:
+		return self.handleKeyPlaying(key)
+	case GS_GameOver:
+		return self.handleKeyGameOver(key)
+	case GS_Paused:
+		return self.handleKeyPaused(key)
+	}
+	return true
+}
+
+//-------------------------------------------------------------------------
+// GameSession::Draw
+//-------------------------------------------------------------------------
+
+func (self *GameSession) Draw() {
+	switch self.State {
+	case GS_Playing:
+		self.drawPlaying()
+	case GS_GameOver:
+		self.drawGameOver()
+	case GS_Paused:
+		self.drawGamePaused()
+	}
+}
+
+func (self *GameSession) drawPlaying() {
+	self.Field.Draw(self.cx, self.cy)
+	self.Figure.Draw(self.cx, self.cy)
+
+	self.NextFigure.Draw(self.cx + self.Field.PixelsWidth() + 50, self.cy + 50)
+}
+
+func (self *GameSession) drawGameOver() {
+	self.drawPlaying()
+	gl.Color3ub(200, 0, 0)
+	self.font.Draw(self.gameOverCx, 5, "Game Over, restart? y/n")
+}
+
+func (self *GameSession) drawGamePaused() {
+	self.drawPlaying()
+	gl.Color3ub(200, 200, 0)
+	self.font.Draw(self.pauseCx, 5, "Game paused, press P to resume")
+}
+
+//-------------------------------------------------------------------------
+// main()
+//-------------------------------------------------------------------------
+
 func main() {
+	flag.Parse()
 	sdl.Init(sdl.INIT_VIDEO)
 	defer sdl.Quit()
 
@@ -390,7 +699,7 @@ func main() {
 	gl.LoadIdentity()
 	gl.Ortho(0, 640, 480, 0, -1, 1)
 
-	gl.ClearColor(0.1, 0, 0, 0)
+	gl.ClearColor(0, 0, 0, 0)
 
 	//-----------------------------------------------------------------------------
 
@@ -399,26 +708,10 @@ func main() {
 		panic(err)
 	}
 
-	field := NewTetrisField(10, 25)
-	pw := field.PixelsWidth()
-	ph := field.PixelsHeight()
-	cx := (640 - pw) / 2
-	cy := (480 - ph) / 2
+	rand.Seed(int64(sdl.GetTicks()))
 
-	labelcx := (640 - font.Width("Tetris!")) / 2
-
-	specs := [...]string{
-		specN,
-		specNMirrored,
-		specT,
-		specI,
-		specB,
-		specL,
-		specLMirrored }
-
-	f := NewTetrisFigure(specI, TetrisBlockColor{0,255,0})
+	gs := NewGameSession(*initLevel, font)
 	lastTime := sdl.GetTicks()
-	timer := uint32(0)
 
 	running := true
 	for running {
@@ -428,52 +721,19 @@ func main() {
 			case sdl.QUIT:
 				running = false
 			case sdl.KEYDOWN:
-				switch e.Keyboard().Keysym.Sym {
-				case sdl.K_LEFT:
-					f.X--
-					if field.Collide(f) {
-						f.X++
-					}
-				case sdl.K_RIGHT:
-					f.X++
-					if field.Collide(f) {
-						f.X--
-					}
-				case sdl.K_UP:
-					f.Rotate(rotateCWBlock)
-					if field.Collide(f) {
-						f.Rotate(rotateCCWBlock)
-					}
-				case sdl.K_DOWN:
-					for {
-						if field.Collide(f) {
-							f.Y--
-							break
-						} else {
-							f.Y++
-						}
-					}
-				}
+				running = gs.HandleKey(e.Keyboard().Keysym.Sym)
 			}
 		}
 
 		now := sdl.GetTicks()
 		delta := now - lastTime
 		lastTime = now
-		timer += delta
-		if timer > 200 {
-			timer -= 200
-			if field.StepCollideAndMerge(f) {
-				field.CheckForLines()
-				f = NewTetrisFigure(specs[rand.Uint32() % uint32(len(specs))],
-						    TetrisBlockColor{0,255,0})
-			}
-		}
+
+		gs.Update(delta)
 
 		gl.Clear(gl.COLOR_BUFFER_BIT)
-		font.Draw(labelcx, 5, "Tetris!")
-		field.Draw(cx, cy)
-		f.Draw(cx, cy)
+		font.Draw(5, 5, fmt.Sprintf("Level: %d | Score: %d", gs.Level, gs.Score))
+		gs.Draw()
 		gl.Color3ub(255,255,255)
 		sdl.GL_SwapBuffers()
 	}
