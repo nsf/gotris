@@ -28,7 +28,7 @@ func drawBlock(x, y int, color TetrisBlockColor) {
 	gl.End()
 }
 
-var initLevel *int = flag.Int("level", 1, "set initial level to this value")
+var initLevel *int = flag.Int("level", 1, "set initial level to this value (1..9)")
 
 //-------------------------------------------------------------------------
 // TetrisFigure
@@ -476,17 +476,24 @@ type GameSession struct {
 }
 
 func NewGameSession(initLevel int, font *Font) *GameSession {
+	if initLevel > 9 {
+		initLevel = 9
+	}
+	if initLevel < 1 {
+		initLevel = 1
+	}
+
 	gs := new(GameSession)
 	gs.Field = NewTetrisField(10, 25)
 	gs.Figure = NewRandomTetrisFigure()
 	gs.NextFigure = NewRandomTetrisFigureNot(gs.Figure)
 	gs.Score = 0
-	gs.initLevel = initLevel
 	gs.Level = initLevel
 	gs.State = GS_Playing
 	gs.time = 0
 	gs.grayifyingTime = 0
 
+	gs.initLevel = initLevel
 	gs.font = font
 	gs.cx = (640 - gs.Field.PixelsWidth()) / 2
 	gs.cy = (480 - gs.Field.PixelsHeight()) / 2
