@@ -73,7 +73,7 @@ const specLMirrored = `
 0000
 `
 
-var specColors = [7]TetrisBlockColor{
+var specColors = [...]TetrisBlockColor{
 	TetrisBlockColor{255,0,0},
 	TetrisBlockColor{0,255,0},
 	TetrisBlockColor{100,100,255},
@@ -82,7 +82,7 @@ var specColors = [7]TetrisBlockColor{
 	TetrisBlockColor{255,255,0},
 	TetrisBlockColor{0,255,255}}
 
-var specs = [7]string{
+var specs = [...]string{
 	specN,
 	specNMirrored,
 	specT,
