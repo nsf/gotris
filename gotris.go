@@ -13,26 +13,7 @@ const smallBlockSize = 9
 const smallBlockOffset = (blockSize - smallBlockSize) / 2
 const grayifyingInterval = 100
 
-func drawBlock(x, y int, color TetrisBlockColor) {
-	gl.Color3ub(gl.GLubyte(color.R/2),gl.GLubyte(color.G/2),gl.GLubyte(color.B/2))
-	gl.Begin(gl.QUADS)
-	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y))
-	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y))
-	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y + blockSize))
-	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y + blockSize))
-	gl.Color3ub(gl.GLubyte(color.R),gl.GLubyte(color.G),gl.GLubyte(color.B))
-	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + blockSize - smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + blockSize - smallBlockOffset))
-	gl.End()
-}
-
 var initLevel *int = flag.Int("level", 1, "set initial level to this value (1..9)")
-
-//-------------------------------------------------------------------------
-// TetrisFigure
-//-------------------------------------------------------------------------
 
 // ah, the source code is utf-8, let's use some UNICODE box-drawing here:
 
@@ -109,6 +90,26 @@ var specs = [7]string{
 	specB,
 	specL,
 	specLMirrored}
+
+func drawBlock(x, y int, color TetrisBlockColor) {
+	gl.Color3ub(gl.GLubyte(color.R/2),gl.GLubyte(color.G/2),gl.GLubyte(color.B/2))
+	gl.Begin(gl.QUADS)
+	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y))
+	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y))
+	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y + blockSize))
+	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y + blockSize))
+	gl.Color3ub(gl.GLubyte(color.R),gl.GLubyte(color.G),gl.GLubyte(color.B))
+	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + smallBlockOffset))
+	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + smallBlockOffset))
+	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + blockSize - smallBlockOffset))
+	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + blockSize - smallBlockOffset))
+	gl.End()
+}
+
+
+//-------------------------------------------------------------------------
+// TetrisFigure
+//-------------------------------------------------------------------------
 
 type TetrisFigure struct {
 	// center of the figure (valid range: 0..3 0..3)
