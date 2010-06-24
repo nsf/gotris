@@ -725,8 +725,8 @@ func main() {
 	lastTime := sdl.GetTicks()
 
 	running := true
+	e := new(sdl.Event)
 	for running {
-		e := new(sdl.Event)
 		for e.Poll() {
 			switch e.Type {
 			case sdl.QUIT:
