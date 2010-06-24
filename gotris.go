@@ -6,6 +6,7 @@ import (
 	"rand"
 	"fmt"
 	"flag"
+	"runtime"
 )
 
 const blockSize = 15
@@ -685,6 +686,7 @@ func (self *GameSession) drawGamePaused() {
 //-------------------------------------------------------------------------
 
 func main() {
+	runtime.LockOSThread()
 	flag.Parse()
 	sdl.Init(sdl.INIT_VIDEO)
 	defer sdl.Quit()

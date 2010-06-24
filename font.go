@@ -2,13 +2,36 @@ package main
 
 import (
 	"gl"
-	"opengl_util"
+	"image"
+	"image/png"
 	"os"
 	"io/ioutil"
 	"bytes"
 	"io"
 	"encoding/binary"
+	"unsafe"
 )
+
+func uploadTexture_NRGBA32(img *image.NRGBA) gl.GLuint {
+	var id gl.GLuint
+
+	gl.GenTextures(1, &id)
+	gl.BindTexture(gl.TEXTURE_2D, id)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.GLsizei(img.Width()), gl.GLsizei(img.Height()), 0, gl.RGBA,
+		      gl.UNSIGNED_BYTE, unsafe.Pointer(&img.Pixel[0][0]))
+
+	if gl.GetError() != gl.NO_ERROR {
+		gl.DeleteTextures(1, &id)
+		panic(os.NewError("Failed to load a texture"))
+		return 0
+	}
+	return id
+}
 
 //-------------------------------------------------------------------------
 // FontGlyph
@@ -41,7 +64,7 @@ type Font struct {
 	// uses binary search lookups in that array, but here in Go I will 
 	// simply use a map for that
 	Encoding []FontEncoding
-	Texture *opengl_util.Texture
+	Texture gl.GLuint
 	YAdvance uint32
 
 	EncodingMap map[int]int
@@ -66,8 +89,12 @@ func readLittleEndian(r io.Reader, data interface{}) {
 func LoadFont(data []byte) (fontOut *Font, errOut os.Error) {
 	defer func() {
 		if err := recover(); err != nil {
+			var ok bool
 			fontOut = nil
-			errOut = err.(os.Error)
+			errOut, ok = err.(os.Error)
+			if !ok {
+				panic(err)
+			}
 		}
 	}()
 
@@ -101,12 +128,17 @@ func LoadFont(data []byte) (fontOut *Font, errOut os.Error) {
 			int(font.Encoding[i].Index)
 	}
 
-	data = buf.Bytes()
-	font.Texture = opengl_util.LoadTexture_PNG_ARGB32(data)
-	if font.Texture == nil {
-		return nil, os.NewError("Failed to load texture")
+	img, err := png.Decode(buf)
+	if err != nil {
+		return nil, err
 	}
 
+	nrgba, ok := img.(*image.NRGBA)
+	if !ok {
+		return nil, os.NewError("Wrong image format")
+	}
+
+	font.Texture = uploadTexture_NRGBA32(nrgba)
 	return font, nil
 }
 
@@ -134,7 +166,7 @@ func drawGlyph(x, y int, g *FontGlyph) {
 }
 
 func (self *Font) Draw(x, y int, text string) {
-	gl.BindTexture(gl.TEXTURE_2D, gl.GLuint(self.Texture.Id))
+	gl.BindTexture(gl.TEXTURE_2D, gl.GLuint(self.Texture))
 	for _, rune := range text {
 		index, ok := self.EncodingMap[rune]
 		if !ok {
