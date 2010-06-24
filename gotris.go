@@ -93,17 +93,20 @@ var specs = [...]string{
 	specLMirrored}
 
 func drawBlock(x, y int, color TetrisBlockColor) {
-	gl.Color3ub(gl.GLubyte(color.R/2),gl.GLubyte(color.G/2),gl.GLubyte(color.B/2))
+	glx := gl.GLint(x)
+	gly := gl.GLint(y)
+
+	gl.Color3ub(gl.GLubyte(color.R/2), gl.GLubyte(color.G/2), gl.GLubyte(color.B/2))
 	gl.Begin(gl.QUADS)
-	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y))
-	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y))
-	gl.Vertex2i(gl.GLint(x + blockSize), gl.GLint(y + blockSize))
-	gl.Vertex2i(gl.GLint(x            ), gl.GLint(y + blockSize))
-	gl.Color3ub(gl.GLubyte(color.R),gl.GLubyte(color.G),gl.GLubyte(color.B))
-	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + blockSize - smallBlockOffset), gl.GLint(y + blockSize - smallBlockOffset))
-	gl.Vertex2i(gl.GLint(x + smallBlockOffset            ), gl.GLint(y + blockSize - smallBlockOffset))
+	gl.Vertex2i(glx, gly)
+	gl.Vertex2i(glx + blockSize, gly)
+	gl.Vertex2i(glx + blockSize, gly + blockSize)
+	gl.Vertex2i(glx, gly + blockSize)
+	gl.Color3ub(gl.GLubyte(color.R), gl.GLubyte(color.G), gl.GLubyte(color.B))
+	gl.Vertex2i(glx + smallBlockOffset, gly + smallBlockOffset)
+	gl.Vertex2i(glx + blockSize - smallBlockOffset, gly + smallBlockOffset)
+	gl.Vertex2i(glx + blockSize - smallBlockOffset, gly + blockSize - smallBlockOffset)
+	gl.Vertex2i(glx + smallBlockOffset, gly + blockSize - smallBlockOffset)
 	gl.End()
 }
 
