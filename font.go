@@ -13,6 +13,18 @@ import (
 )
 
 func uploadTexture_NRGBA32(img *image.NRGBA) gl.GLuint {
+	data := make([]uint8, img.Width() * img.Height() * 4)
+	for y := 0; y < img.Height(); y++ {
+		for x := 0; x < img.Width(); x++ {
+			p := &img.Pixel[y][x]
+			offset := y * img.Width() * 4 + x * 4
+			data[offset+0] = p.R;
+			data[offset+1] = p.G;
+			data[offset+2] = p.B;
+			data[offset+3] = p.A;
+		}
+	}
+
 	var id gl.GLuint
 
 	gl.GenTextures(1, &id)
@@ -23,7 +35,7 @@ func uploadTexture_NRGBA32(img *image.NRGBA) gl.GLuint {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.GLsizei(img.Width()), gl.GLsizei(img.Height()), 0, gl.RGBA,
-		      gl.UNSIGNED_BYTE, unsafe.Pointer(&img.Pixel[0][0]))
+		      gl.UNSIGNED_BYTE, unsafe.Pointer(&data[0]))
 
 	if gl.GetError() != gl.NO_ERROR {
 		gl.DeleteTextures(1, &id)
