@@ -1,6 +1,6 @@
 all: gotris dejavu.font
 
-include $(GOROOT)/src/Make.$(GOARCH)
+include $(GOROOT)/src/Make.inc
 
 TARG=gotris
 GOFILES=gotris.go font.go
