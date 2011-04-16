@@ -96,17 +96,17 @@ func drawBlock(x, y int, color TetrisBlockColor) {
 	glx := gl.GLint(x)
 	gly := gl.GLint(y)
 
-	gl.Color3ub(gl.GLubyte(color.R/2), gl.GLubyte(color.G/2), gl.GLubyte(color.B/2))
+	gl.Color3ub(color.R/2, color.G/2, color.B/2)
 	gl.Begin(gl.QUADS)
-	gl.Vertex2i(glx, gly)
-	gl.Vertex2i(glx + blockSize, gly)
-	gl.Vertex2i(glx + blockSize, gly + blockSize)
-	gl.Vertex2i(glx, gly + blockSize)
-	gl.Color3ub(gl.GLubyte(color.R), gl.GLubyte(color.G), gl.GLubyte(color.B))
-	gl.Vertex2i(glx + smallBlockOffset, gly + smallBlockOffset)
-	gl.Vertex2i(glx + blockSize - smallBlockOffset, gly + smallBlockOffset)
-	gl.Vertex2i(glx + blockSize - smallBlockOffset, gly + blockSize - smallBlockOffset)
-	gl.Vertex2i(glx + smallBlockOffset, gly + blockSize - smallBlockOffset)
+	gl.Vertex2i(int(glx), int(gly))
+	gl.Vertex2i(int(glx + blockSize), int(gly))
+	gl.Vertex2i(int(glx + blockSize), int(gly + blockSize))
+	gl.Vertex2i(int(glx), int(gly + blockSize))
+	gl.Color3ub(color.R, color.G, color.B)
+	gl.Vertex2i(int(glx + smallBlockOffset), int(gly + smallBlockOffset))
+	gl.Vertex2i(int(glx + blockSize - smallBlockOffset), int(gly + smallBlockOffset))
+	gl.Vertex2i(int(glx + blockSize - smallBlockOffset), int(gly + blockSize - smallBlockOffset))
+	gl.Vertex2i(int(glx + smallBlockOffset), int(gly + blockSize - smallBlockOffset))
 	gl.End()
 }
 
@@ -701,10 +701,6 @@ func main() {
 
 	sdl.WM_SetCaption("Gotris", "Gotris")
 	sdl.EnableKeyRepeat(250, 45)
-
-	if gl.Init() != 0 {
-		panic("glew error")
-	}
 
 	gl.Enable(gl.TEXTURE_2D)
 	gl.Enable(gl.BLEND)

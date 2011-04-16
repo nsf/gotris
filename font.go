@@ -9,10 +9,9 @@ import (
 	"bytes"
 	"io"
 	"encoding/binary"
-	"unsafe"
 )
 
-func uploadTexture_NRGBA32(img *image.NRGBA) gl.GLuint {
+func uploadTexture_NRGBA32(img *image.NRGBA) gl.Texture {
 	b := img.Bounds()
 	data := make([]uint8, b.Max.X * b.Max.Y * 4)
 	for y := 0; y < b.Max.Y; y++ {
@@ -26,20 +25,17 @@ func uploadTexture_NRGBA32(img *image.NRGBA) gl.GLuint {
 		}
 	}
 
-	var id gl.GLuint
-
-	gl.GenTextures(1, &id)
-	gl.BindTexture(gl.TEXTURE_2D, id)
+	id := gl.GenTexture()
+	id.Bind(gl.TEXTURE_2D)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.GLsizei(b.Max.X), gl.GLsizei(b.Max.Y), 0, gl.RGBA,
-		      gl.UNSIGNED_BYTE, unsafe.Pointer(&data[0]))
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, b.Max.X, b.Max.Y, 0, gl.RGBA, data)
 
 	if gl.GetError() != gl.NO_ERROR {
-		gl.DeleteTextures(1, &id)
+		id.Delete()
 		panic(os.NewError("Failed to load a texture"))
 		return 0
 	}
@@ -77,7 +73,7 @@ type Font struct {
 	// uses binary search lookups in that array, but here in Go I will 
 	// simply use a map for that
 	Encoding []FontEncoding
-	Texture gl.GLuint
+	Texture gl.Texture
 	YAdvance uint32
 
 	EncodingMap map[int]int
@@ -155,31 +151,31 @@ func LoadFont(data []byte) (fontOut *Font, errOut os.Error) {
 	return font, nil
 }
 
-func drawQuad(x, y, w, h int, u, v, u2, v2 float) {
+func drawQuad(x, y, w, h int, u, v, u2, v2 float32) {
 	gl.Begin(gl.QUADS)
 
-	gl.TexCoord2f(gl.GLfloat(u), gl.GLfloat(v))
-	gl.Vertex2i(gl.GLint(x), gl.GLint(y))
+	gl.TexCoord2f(float32(u), float32(v))
+	gl.Vertex2i(int(x), int(y))
 
-	gl.TexCoord2f(gl.GLfloat(u2), gl.GLfloat(v))
-	gl.Vertex2i(gl.GLint(x+w), gl.GLint(y))
+	gl.TexCoord2f(float32(u2), float32(v))
+	gl.Vertex2i(int(x+w), int(y))
 
-	gl.TexCoord2f(gl.GLfloat(u2), gl.GLfloat(v2))
-	gl.Vertex2i(gl.GLint(x+w), gl.GLint(y+h))
+	gl.TexCoord2f(float32(u2), float32(v2))
+	gl.Vertex2i(int(x+w), int(y+h))
 
-	gl.TexCoord2f(gl.GLfloat(u), gl.GLfloat(v2))
-	gl.Vertex2i(gl.GLint(x), gl.GLint(y+h))
+	gl.TexCoord2f(float32(u), float32(v2))
+	gl.Vertex2i(int(x), int(y+h))
 
 	gl.End()
 }
 
 func drawGlyph(x, y int, g *FontGlyph) {
 	drawQuad(x + int(g.OffsetX), y + int(g.OffsetY), int(g.Width), int(g.Height),
-		 float(g.TX), float(g.TY), float(g.TX2), float(g.TY2))
+		 float32(g.TX), float32(g.TY), float32(g.TX2), float32(g.TY2))
 }
 
 func (self *Font) Draw(x, y int, text string) {
-	gl.BindTexture(gl.TEXTURE_2D, gl.GLuint(self.Texture))
+	gl.BindTexture(gl.TEXTURE_2D, uint(self.Texture))
 	for _, rune := range text {
 		index, ok := self.EncodingMap[rune]
 		if !ok {
