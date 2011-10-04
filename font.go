@@ -16,12 +16,13 @@ func uploadTexture_NRGBA32(img *image.NRGBA) gl.Texture {
 	data := make([]uint8, b.Max.X * b.Max.Y * 4)
 	for y := 0; y < b.Max.Y; y++ {
 		for x := 0; x < b.Max.X; x++ {
-			p := &img.Pix[y * img.Stride + x]
+			p := img.At(x, y)
 			offset := y * b.Max.X * 4 + x * 4
-			data[offset+0] = p.R;
-			data[offset+1] = p.G;
-			data[offset+2] = p.B;
-			data[offset+3] = p.A;
+			r, g, b, a := p.RGBA()
+			data[offset+0] = uint8(r)
+			data[offset+1] = uint8(g)
+			data[offset+2] = uint8(b)
+			data[offset+3] = uint8(a)
 		}
 	}
 
@@ -32,7 +33,7 @@ func uploadTexture_NRGBA32(img *image.NRGBA) gl.Texture {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, b.Max.X, b.Max.Y, 0, gl.RGBA, data)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, b.Max.X, b.Max.Y, 0, gl.RGBA, gl.UNSIGNED_BYTE, data)
 
 	if gl.GetError() != gl.NO_ERROR {
 		id.Delete()
