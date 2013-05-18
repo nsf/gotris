@@ -7,6 +7,7 @@ import (
 	"github.com/banthar/gl"
 	"math/rand"
 	"runtime"
+	"time"
 )
 
 const blockSize = 15
@@ -488,6 +489,7 @@ type GameSession struct {
 	gameOverCx     int
 	pauseCx        int
 	font           *Font
+	update         chan byte
 }
 
 func NewGameSession(initLevel int, font *Font) *GameSession {
@@ -514,6 +516,7 @@ func NewGameSession(initLevel int, font *Font) *GameSession {
 	gs.cy = (480 - gs.Field.PixelsHeight()) / 2
 	gs.gameOverCx = (640 - font.Width("Game Over, restart? y/n")) / 2
 	gs.pauseCx = (640 - font.Width("Game paused, press P to resume")) / 2
+	gs.update = make(chan byte, 1)
 	return gs
 }
 
@@ -733,31 +736,46 @@ func main() {
 
 	gs := NewGameSession(*initLevel, font)
 	lastTime := sdl.GetTicks()
+	ticker := time.NewTicker(10 * time.Millisecond)
 
-	running := true
+	stop := make(chan byte, 1)
 	go func() {
 		for {
 			switch e := (<-sdl.Events).(type) {
 			case sdl.QuitEvent:
-				running = false
+				stop <- 0
 			case sdl.KeyboardEvent:
 				if e.Type == sdl.KEYDOWN {
-					running = gs.HandleKey(e.Keysym.Sym)
+					running := gs.HandleKey(e.Keysym.Sym)
+					if !running {
+						stop <- 0
+					}
+					gs.update <- 0
 				}
 			}
 		}
 	}()
-	for running {
-		now := sdl.GetTicks()
-		delta := now - lastTime
-		lastTime = now
+loop:
+	for {
+		select {
+		case <-ticker.C:
+			gs.update <- 0
 
-		gs.Update(delta)
+		case <-gs.update:
+			now := sdl.GetTicks()
+			delta := now - lastTime
+			lastTime = now
 
-		gl.Clear(gl.COLOR_BUFFER_BIT)
-		font.Draw(5, 5, fmt.Sprintf("Level: %d | Score: %d", gs.Level, gs.Score))
-		gs.Draw()
-		gl.Color3ub(255, 255, 255)
-		sdl.GL_SwapBuffers()
+			gs.Update(delta)
+
+			gl.Clear(gl.COLOR_BUFFER_BIT)
+			font.Draw(5, 5, fmt.Sprintf("Level: %d | Score: %d", gs.Level, gs.Score))
+			gs.Draw()
+			gl.Color3ub(255, 255, 255)
+			sdl.GL_SwapBuffers()
+
+		case <-stop:
+			break loop
+		}
 	}
 }
