@@ -1,23 +1,23 @@
 package main
 
 import (
-	"gl"
+	"bytes"
+	"encoding/binary"
+	"errors"
+	"github.com/banthar/gl"
 	"image"
 	"image/png"
-	"os"
-	"io/ioutil"
-	"bytes"
 	"io"
-	"encoding/binary"
+	"io/ioutil"
 )
 
 func uploadTexture_NRGBA32(img *image.NRGBA) gl.Texture {
 	b := img.Bounds()
-	data := make([]uint8, b.Max.X * b.Max.Y * 4)
+	data := make([]uint8, b.Max.X*b.Max.Y*4)
 	for y := 0; y < b.Max.Y; y++ {
 		for x := 0; x < b.Max.X; x++ {
 			p := img.At(x, y)
-			offset := y * b.Max.X * 4 + x * 4
+			offset := y*b.Max.X*4 + x*4
 			r, g, b, a := p.RGBA()
 			data[offset+0] = uint8(r)
 			data[offset+1] = uint8(g)
@@ -37,7 +37,7 @@ func uploadTexture_NRGBA32(img *image.NRGBA) gl.Texture {
 
 	if gl.GetError() != gl.NO_ERROR {
 		id.Delete()
-		panic(os.NewError("Failed to load a texture"))
+		panic(errors.New("Failed to load a texture"))
 		return 0
 	}
 	return id
@@ -50,12 +50,12 @@ func uploadTexture_NRGBA32(img *image.NRGBA) gl.Texture {
 type FontGlyph struct {
 	OffsetX int32
 	OffsetY int32
-	Width uint32
-	Height uint32
+	Width   uint32
+	Height  uint32
 
 	// texture coords
-	TX float32
-	TY float32
+	TX  float32
+	TY  float32
 	TX2 float32
 	TY2 float32
 
@@ -64,23 +64,23 @@ type FontGlyph struct {
 
 type FontEncoding struct {
 	Unicode uint32
-	Index uint32
+	Index   uint32
 }
 
 type Font struct {
 	Glyphs []FontGlyph
 
 	// I'm keeping it here because original font implementation
-	// uses binary search lookups in that array, but here in Go I will 
+	// uses binary search lookups in that array, but here in Go I will
 	// simply use a map for that
 	Encoding []FontEncoding
-	Texture gl.Texture
+	Texture  gl.Texture
 	YAdvance uint32
 
-	EncodingMap map[int]int
+	EncodingMap map[rune]int
 }
 
-func LoadFontFromFile(filename string) (*Font, os.Error) {
+func LoadFontFromFile(filename string) (*Font, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -96,12 +96,12 @@ func readLittleEndian(r io.Reader, data interface{}) {
 	}
 }
 
-func LoadFont(data []byte) (fontOut *Font, errOut os.Error) {
+func LoadFont(data []byte) (fontOut *Font, errOut error) {
 	defer func() {
 		if err := recover(); err != nil {
 			var ok bool
 			fontOut = nil
-			errOut, ok = err.(os.Error)
+			errOut, ok = err.(error)
 			if !ok {
 				panic(err)
 			}
@@ -129,12 +129,12 @@ func LoadFont(data []byte) (fontOut *Font, errOut os.Error) {
 	}
 
 	font.Encoding = make([]FontEncoding, glyphsNum)
-	font.EncodingMap = make(map[int]int, glyphsNum)
+	font.EncodingMap = make(map[rune]int, glyphsNum)
 	for i := 0; i < int(glyphsNum); i++ {
 		readLittleEndian(buf, &font.Encoding[i].Unicode)
 		readLittleEndian(buf, &font.Encoding[i].Index)
 
-		font.EncodingMap[int(font.Encoding[i].Unicode)] =
+		font.EncodingMap[rune(font.Encoding[i].Unicode)] =
 			int(font.Encoding[i].Index)
 	}
 
@@ -145,7 +145,7 @@ func LoadFont(data []byte) (fontOut *Font, errOut os.Error) {
 
 	nrgba, ok := img.(*image.NRGBA)
 	if !ok {
-		return nil, os.NewError("Wrong image format")
+		return nil, errors.New("Wrong image format")
 	}
 
 	font.Texture = uploadTexture_NRGBA32(nrgba)
@@ -171,8 +171,8 @@ func drawQuad(x, y, w, h int, u, v, u2, v2 float32) {
 }
 
 func drawGlyph(x, y int, g *FontGlyph) {
-	drawQuad(x + int(g.OffsetX), y + int(g.OffsetY), int(g.Width), int(g.Height),
-		 float32(g.TX), float32(g.TY), float32(g.TX2), float32(g.TY2))
+	drawQuad(x+int(g.OffsetX), y+int(g.OffsetY), int(g.Width), int(g.Height),
+		float32(g.TX), float32(g.TY), float32(g.TX2), float32(g.TY2))
 }
 
 func (self *Font) Draw(x, y int, text string) {
@@ -183,7 +183,7 @@ func (self *Font) Draw(x, y int, text string) {
 			continue
 		}
 
-		g := &self.Glyphs[index - 1]
+		g := &self.Glyphs[index-1]
 		drawGlyph(x, y, g)
 		x += int(g.XAdvance)
 	}
@@ -198,7 +198,7 @@ func (self *Font) Width(text string) int {
 			continue
 		}
 
-		x += int(self.Glyphs[index - 1].XAdvance)
+		x += int(self.Glyphs[index-1].XAdvance)
 	}
 	return x
 }
