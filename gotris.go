@@ -1,11 +1,11 @@
 package main
 
 import (
-	"sdl"
-	"gl"
-	"rand"
-	"fmt"
 	"flag"
+	"fmt"
+	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/banthar/gl"
+	"math/rand"
 	"runtime"
 )
 
@@ -26,6 +26,7 @@ const specN = `
 0000
 0000
 `
+
 //   ████
 // ████
 const specNMirrored = `
@@ -34,6 +35,7 @@ const specNMirrored = `
 0000
 0000
 `
+
 //   ██
 // ██████
 const specT = `
@@ -42,6 +44,7 @@ const specT = `
 0000
 0000
 `
+
 // ████████
 const specI = `
 0100
@@ -49,6 +52,7 @@ const specI = `
 0100
 0100
 `
+
 // ████
 // ████
 const specB = `
@@ -57,6 +61,7 @@ const specB = `
 0000
 0000
 `
+
 // ██████
 // ██
 const specL = `
@@ -65,6 +70,7 @@ const specL = `
 0110
 0000
 `
+
 // ██████
 //     ██
 const specLMirrored = `
@@ -75,13 +81,13 @@ const specLMirrored = `
 `
 
 var specColors = [...]TetrisBlockColor{
-	TetrisBlockColor{255,0,0},
-	TetrisBlockColor{0,255,0},
-	TetrisBlockColor{100,100,255},
-	TetrisBlockColor{255,255,255},
-	TetrisBlockColor{255,0,255},
-	TetrisBlockColor{255,255,0},
-	TetrisBlockColor{0,255,255}}
+	TetrisBlockColor{255, 0, 0},
+	TetrisBlockColor{0, 255, 0},
+	TetrisBlockColor{100, 100, 255},
+	TetrisBlockColor{255, 255, 255},
+	TetrisBlockColor{255, 0, 255},
+	TetrisBlockColor{255, 255, 0},
+	TetrisBlockColor{0, 255, 255}}
 
 var specs = [...]string{
 	specN,
@@ -99,14 +105,14 @@ func drawBlock(x, y int, color TetrisBlockColor) {
 	gl.Color3ub(color.R/2, color.G/2, color.B/2)
 	gl.Begin(gl.QUADS)
 	gl.Vertex2i(int(glx), int(gly))
-	gl.Vertex2i(int(glx + blockSize), int(gly))
-	gl.Vertex2i(int(glx + blockSize), int(gly + blockSize))
-	gl.Vertex2i(int(glx), int(gly + blockSize))
+	gl.Vertex2i(int(glx+blockSize), int(gly))
+	gl.Vertex2i(int(glx+blockSize), int(gly+blockSize))
+	gl.Vertex2i(int(glx), int(gly+blockSize))
 	gl.Color3ub(color.R, color.G, color.B)
-	gl.Vertex2i(int(glx + smallBlockOffset), int(gly + smallBlockOffset))
-	gl.Vertex2i(int(glx + blockSize - smallBlockOffset), int(gly + smallBlockOffset))
-	gl.Vertex2i(int(glx + blockSize - smallBlockOffset), int(gly + blockSize - smallBlockOffset))
-	gl.Vertex2i(int(glx + smallBlockOffset), int(gly + blockSize - smallBlockOffset))
+	gl.Vertex2i(int(glx+smallBlockOffset), int(gly+smallBlockOffset))
+	gl.Vertex2i(int(glx+blockSize-smallBlockOffset), int(gly+smallBlockOffset))
+	gl.Vertex2i(int(glx+blockSize-smallBlockOffset), int(gly+blockSize-smallBlockOffset))
+	gl.Vertex2i(int(glx+smallBlockOffset), int(gly+blockSize-smallBlockOffset))
 	gl.End()
 }
 
@@ -119,9 +125,9 @@ type TetrisFigure struct {
 	CenterX, CenterY int
 
 	// position in blocks relative to top left tetris field block
-	X, Y int
+	X, Y   int
 	Blocks [16]TetrisBlock
-	Class uint32
+	Class  uint32
 }
 
 // build figure out of spec
@@ -205,13 +211,13 @@ func (self *TetrisFigure) GetRotationsNum(rotateBlock RotateFunc) int {
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
 			blockMask := uint(0)
-			if !self.Blocks[y * 4 + x].Filled {
+			if !self.Blocks[y*4+x].Filled {
 				continue
 			}
-			blockX, blockY := x - self.CenterX, y - self.CenterY
+			blockX, blockY := x-self.CenterX, y-self.CenterY
 			for i := 0; i < 4; i++ {
 				blockX, blockY = rotateBlock(blockX, blockY)
-				rbx, rby := self.CenterX + blockX, self.CenterY + blockY
+				rbx, rby := self.CenterX+blockX, self.CenterY+blockY
 
 				// check whether a rotation is valid an record it
 				if rbx >= 0 && rbx <= 4 && rby >= 0 && rby <= 4 {
@@ -228,10 +234,14 @@ func (self *TetrisFigure) GetRotationsNum(rotateBlock RotateFunc) int {
 	rotationsNum := 0
 	// determine number of rotations
 	switch {
-	case validRotations & Rotate1 > 0: rotationsNum = 1
-	case validRotations & Rotate2 > 0: rotationsNum = 2
-	case validRotations & Rotate3 > 0: rotationsNum = 3
-	case validRotations & Rotate4 > 0: rotationsNum = 4
+	case validRotations&Rotate1 > 0:
+		rotationsNum = 1
+	case validRotations&Rotate2 > 0:
+		rotationsNum = 2
+	case validRotations&Rotate3 > 0:
+		rotationsNum = 3
+	case validRotations&Rotate4 > 0:
+		rotationsNum = 4
 	}
 
 	return rotationsNum
@@ -252,14 +262,14 @@ func (self *TetrisFigure) Rotate(rotateBlock RotateFunc) {
 		}
 		x := i % 4
 		y := i / 4
-		x, y = x - self.CenterX, y - self.CenterY
+		x, y = x-self.CenterX, y-self.CenterY
 
 		for j := 0; j < rotationsNum; j++ {
 			x, y = rotateBlock(x, y)
 		}
 
-		x, y = x + self.CenterX, y + self.CenterY
-		newBlocks[y * 4 + x] = self.Blocks[i]
+		x, y = x+self.CenterX, y+self.CenterY
+		newBlocks[y*4+x] = self.Blocks[i]
 	}
 	self.Blocks = newBlocks
 }
@@ -269,8 +279,8 @@ func (self *TetrisFigure) Draw(ox, oy int) {
 	oy += self.Y * blockSize
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
-			offset := y * 4 + x
-			self.Blocks[offset].Draw(ox + x * blockSize, oy + y * blockSize)
+			offset := y*4 + x
+			self.Blocks[offset].Draw(ox+x*blockSize, oy+y*blockSize)
 		}
 	}
 }
@@ -289,7 +299,7 @@ type TetrisBlockColor struct {
 
 type TetrisBlock struct {
 	Filled bool
-	Color TetrisBlockColor
+	Color  TetrisBlockColor
 }
 
 func (self *TetrisBlock) Draw(x, y int) {
@@ -303,7 +313,7 @@ func (self *TetrisBlock) Draw(x, y int) {
 //-------------------------------------------------------------------------
 
 type TetrisField struct {
-	Width int
+	Width  int
 	Height int
 	Blocks []TetrisBlock
 }
@@ -313,7 +323,7 @@ func NewTetrisField(w, h int) *TetrisField {
 }
 
 func (self *TetrisField) Clear() {
-	for i := 0; i < self.Width * self.Height; i++ {
+	for i := 0; i < self.Width*self.Height; i++ {
 		self.Blocks[i].Filled = false
 	}
 }
@@ -321,26 +331,26 @@ func (self *TetrisField) Clear() {
 func (self *TetrisField) Draw(ox, oy int) {
 	leftWallX := self.PixelsWidth() - blockSize
 	grey := TetrisBlockColor{80, 80, 80}
-	for y := 0; y < self.Height + 1; y++ {
-		drawBlock(ox, oy + y * blockSize, grey)
-		drawBlock(ox + leftWallX, oy + y * blockSize, grey)
+	for y := 0; y < self.Height+1; y++ {
+		drawBlock(ox, oy+y*blockSize, grey)
+		drawBlock(ox+leftWallX, oy+y*blockSize, grey)
 	}
 	bottomWallY := self.PixelsHeight() - blockSize
 	for x := 0; x < self.Width; x++ {
-		drawBlock(ox + (x + 1) * blockSize, oy + bottomWallY, grey)
+		drawBlock(ox+(x+1)*blockSize, oy+bottomWallY, grey)
 	}
 
 	ox += blockSize
 	for y := 0; y < self.Height; y++ {
 		for x := 0; x < self.Width; x++ {
-			offset := y * self.Width + x
-			self.Blocks[offset].Draw(ox + x * blockSize, oy + y * blockSize)
+			offset := y*self.Width + x
+			self.Blocks[offset].Draw(ox+x*blockSize, oy+y*blockSize)
 		}
 	}
 }
 
 func (self *TetrisField) Grayify() {
-	for i := 0; i < self.Width * self.Height; i++ {
+	for i := 0; i < self.Width*self.Height; i++ {
 		if !self.Blocks[i].Filled {
 			continue
 		}
@@ -373,16 +383,16 @@ func (self *TetrisField) Grayify() {
 func (self *TetrisField) Collide(figure *TetrisFigure) bool {
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
-			offset := y * 4 + x
+			offset := y*4 + x
 			if !figure.Blocks[offset].Filled {
 				continue
 			}
 
-			fx, fy := figure.X + x, figure.Y + y
+			fx, fy := figure.X+x, figure.Y+y
 			if fx < 0 || fy < 0 || fx >= self.Width || fy >= self.Height {
 				return true
 			}
-			fieldOffset := fy * self.Width + fx
+			fieldOffset := fy*self.Width + fx
 			if self.Blocks[fieldOffset].Filled {
 				return true
 			}
@@ -400,12 +410,12 @@ func (self *TetrisField) StepCollideAndMerge(figure *TetrisFigure) bool {
 
 	for y := 0; y < 4; y++ {
 		for x := 0; x < 4; x++ {
-			offset := y * 4 + x
+			offset := y*4 + x
 			if !figure.Blocks[offset].Filled {
 				continue
 			}
-			fx, fy := figure.X + x, figure.Y + y
-			fieldOffset := fy * self.Width + fx
+			fx, fy := figure.X+x, figure.Y+y
+			fieldOffset := fy*self.Width + fx
 			self.Blocks[fieldOffset] = figure.Blocks[offset]
 		}
 	}
@@ -419,7 +429,7 @@ func (self *TetrisField) CheckForLines() int {
 	for y := 0; y < self.Height; y++ {
 		full := true
 		for x := 0; x < self.Width; x++ {
-			offset := y * self.Width + x
+			offset := y*self.Width + x
 			if !self.Blocks[offset].Filled {
 				full = false
 				break
@@ -435,8 +445,8 @@ func (self *TetrisField) CheckForLines() int {
 
 		for y2 := y - 1; y2 >= 0; y2-- {
 			for x := 0; x < self.Width; x++ {
-				offset := y2 * self.Width + x
-				self.Blocks[offset + self.Width] = self.Blocks[offset]
+				offset := y2*self.Width + x
+				self.Blocks[offset+self.Width] = self.Blocks[offset]
 			}
 		}
 	}
@@ -463,21 +473,21 @@ const (
 )
 
 type GameSession struct {
-	Field *TetrisField
-	Figure *TetrisFigure
+	Field      *TetrisField
+	Figure     *TetrisFigure
 	NextFigure *TetrisFigure
 
 	Score int
 	Level int
 	State int
 
-	time uint32
+	time           uint32
 	grayifyingTime uint32
-	cx, cy int
-	initLevel int
-	gameOverCx int
-	pauseCx int
-	font *Font
+	cx, cy         int
+	initLevel      int
+	gameOverCx     int
+	pauseCx        int
+	font           *Font
 }
 
 func NewGameSession(initLevel int, font *Font) *GameSession {
@@ -524,7 +534,7 @@ func (self *GameSession) Speed() uint32 {
 
 func (self *GameSession) AddScore(score int) {
 	self.Score += score * self.Level
-	if self.Score > self.Level * self.Level * 10000 && self.Level < 9 {
+	if self.Score > self.Level*self.Level*10000 && self.Level < 9 {
 		self.Level++
 	}
 }
@@ -667,8 +677,8 @@ func (self *GameSession) drawPlaying() {
 	self.Figure.Draw(self.cx, self.cy)
 
 	gl.Color3ub(255, 255, 255)
-	self.font.Draw(self.cx + self.Field.PixelsWidth() + 50, self.cy + 5, "Next:")
-	self.NextFigure.Draw(self.cx + self.Field.PixelsWidth(), self.cy + 50)
+	self.font.Draw(self.cx+self.Field.PixelsWidth()+50, self.cy+5, "Next:")
+	self.NextFigure.Draw(self.cx+self.Field.PixelsWidth(), self.cy+50)
 }
 
 func (self *GameSession) drawGameOver() {
@@ -725,23 +735,19 @@ func main() {
 	lastTime := sdl.GetTicks()
 
 	running := true
-	for running {
+	go func() {
 		for {
-			event := sdl.PollEvent()
-			if event == nil {
-				break
-			}
-
-			switch e := event.(type) {
-			case *sdl.QuitEvent:
+			switch e := (<-sdl.Events).(type) {
+			case sdl.QuitEvent:
 				running = false
-			case *sdl.KeyboardEvent:
+			case sdl.KeyboardEvent:
 				if e.Type == sdl.KEYDOWN {
 					running = gs.HandleKey(e.Keysym.Sym)
 				}
 			}
 		}
-
+	}()
+	for running {
 		now := sdl.GetTicks()
 		delta := now - lastTime
 		lastTime = now
@@ -751,7 +757,7 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 		font.Draw(5, 5, fmt.Sprintf("Level: %d | Score: %d", gs.Level, gs.Score))
 		gs.Draw()
-		gl.Color3ub(255,255,255)
+		gl.Color3ub(255, 255, 255)
 		sdl.GL_SwapBuffers()
 	}
 }
