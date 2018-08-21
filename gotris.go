@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/0xe2-0x9a-0x9b/Go-SDL/sdl"
+	"github.com/banther/Go-SDL/sdl"
 	"github.com/banthar/gl"
 	"math/rand"
 	"runtime"
